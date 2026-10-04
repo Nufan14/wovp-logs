@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>WoVP — Dépôt de logs</title>
+<style>
+  body { font-family: Consolas, monospace; background: #1a1a1a; color: #ddd; margin: 20px; }
+  h1 { color: #4fc3f7; }
+  .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+  .player-card { background: #222; border: 1px solid #333; border-radius: 6px; padding: 15px; text-align: center; }
+  .player-name { font-size: 16px; font-weight: bold; color: #81c784; margin-bottom: 10px; }
+  .dropzone { border: 2px dashed #555; border-radius: 4px; padding: 20px 10px; cursor: pointer; transition: all 0.2s; font-size: 12px; color: #888; }
+  .dropzone:hover, .dropzone.hover { border-color: #4fc3f7; background: #2a2a2a; color: #4fc3f7; }
+  .dropzone input[type="file"] { display: none; }
+  .status { margin-top: 8px; font-size: 12px; min-height: 16px; }
+  .status.ok { color: #81c784; }
+  .status.error { color: #e57373; }
+</style>
+</head>
+<body>
+
+<h1>WoVP — Dépôt de logs</h1>
+<p>Dépose ton fichier log sur ton nom (ou clique pour parcourir).</p>
+
+<div class="player-grid" id="grid"></div>
+
+<script>
+// =========================================================================
+// CONFIGURATION
+// =========================================================================
+const GITHUB_USER = "nufan14";
+const GITHUB_REPO = "wovp-logs";
+const GITHUB_TOKEN = "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";
+
+// =========================================================================
+// LISTE DES JOUEURS — Ajoute ou retire des noms ici
+// =========================================================================
+const PLAYERS = [
+  "Matthieu",
+  "Alex",
+  "Delbol",
+  "Elicend",
+  "Sherman",
+  "Ale",
+  "Bielaski"
+];
+
+// =========================================================================
+// CONSTRUCTION DE LA GRILLE
+// =========================================================================
+const grid = document.getElementById("grid");
+
+PLAYERS.forEach(playerName => {
+  const card = document.createElement("div");
+  card.className = "player-card";
+
+  const nameDiv = document.createElement("div");
+  nameDiv.className = "player-name";
+  nameDiv.textContent = playerName;
+
+  const dropzone = document.createElement("div");
+  dropzone.className = "dropzone";
+  dropzone.textContent = "Déposer un log";
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".log,.txt";
+  fileInput.style.display = "none";
+
+  const status = document.createElement("div");
+  status.className = "status";
+
+  dropzone.appendChild(fileInput);
+
+  dropzone.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+      uploadFile(playerName, fileInput.files[0], status, dropzone);
+    }
+  });
+
+  dropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.classList.add("hover");
+  });
+
+  dropzone.addEventListener("dragleave", () => {
+    dropzone.classList.remove("hover");
+  });
+
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("hover");
+    if (e.dataTransfer.files.length > 0) {
+      uploadFile(playerName, e.dataTransfer.files[0], status, dropzone);
+    }
+  });
+
+  card.appendChild(nameDiv);
+  card.appendChild(dropzone);
+  card.appendChild(status);
+  grid.appendChild(card);
+});
+
+// =========================================================================
+// UPLOAD VERS GITHUB
+// =========================================================================
+function uploadFile(playerName, file, statusEl, dropzoneEl) {
+  statusEl.textContent = "Envoi en cours...";
+  statusEl.className = "status";
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Content = e.target.result.split(',')[1];
+    const fileName = file.name;
+    const filePath = "logs/" + playerName + "/" + fileName;
+
+    const apiUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/contents/" + filePath;
+
+    fetch(apiUrl, {
+      method: "PUT",
+      headers: {
+        "Authorization": "Bearer " + GITHUB_TOKEN,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: "Upload log: " + fileName + " (" + playerName + ")",
+        content: base64Content
+      })
+    })
+    .then(response => {
+      if (response.ok) {
+        statusEl.textContent = "✓ Envoyé !";
+        statusEl.className = "status ok";
+        dropzoneEl.textContent = "Déposer un autre log";
+      } else {
+        return response.json().then(err => { throw new Error(err.message || "HTTP " + response.status); });
+      }
+    })
+    .catch(error => {
+      statusEl.textContent = "✗ Erreur : " + error.message;
+      statusEl.className = "status error";
+    });
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+
+</body>
+</html>
