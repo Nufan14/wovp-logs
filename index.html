@@ -1,152 +1,245 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>WoVP — Dépôt de logs</title>
-<style>
-  body { font-family: Consolas, monospace; background: #1a1a1a; color: #ddd; margin: 20px; }
-  h1 { color: #4fc3f7; }
-  .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
-  .player-card { background: #222; border: 1px solid #333; border-radius: 6px; padding: 15px; text-align: center; }
-  .player-name { font-size: 16px; font-weight: bold; color: #81c784; margin-bottom: 10px; }
-  .dropzone { border: 2px dashed #555; border-radius: 4px; padding: 20px 10px; cursor: pointer; transition: all 0.2s; font-size: 12px; color: #888; }
-  .dropzone:hover, .dropzone.hover { border-color: #4fc3f7; background: #2a2a2a; color: #4fc3f7; }
-  .dropzone input[type="file"] { display: none; }
-  .status { margin-top: 8px; font-size: 12px; min-height: 16px; }
-  .status.ok { color: #81c784; }
-  .status.error { color: #e57373; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoVP Integrity - Dépôt de Logs</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-hover: #334155;
+      --primary: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .search-box {
+      margin-bottom: 25px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .search-box input {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background-color: var(--card-bg);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: var(--primary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .player-card {
+      background-color: var(--card-bg);
+      border: 2px dashed #475569;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .player-card.dragover {
+      border-color: var(--primary);
+      background-color: var(--card-hover);
+    }
+
+    .player-name {
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .drop-zone-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .btn-browse {
+      background-color: #334155;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-browse:hover {
+      background-color: var(--primary);
+      color: #0f172a;
+    }
+
+    .status-msg {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      min-height: 1.2em;
+    }
+
+    .status-msg.sending { color: var(--primary); }
+    .status-msg.success { color: var(--success); }
+    .status-msg.error { color: var(--error); }
+  </style>
 </head>
 <body>
 
-<h1>WoVP — Dépôt de logs</h1>
-<p>Dépose ton fichier log sur ton nom (ou clique pour parcourir).</p>
+  <div class="container">
+    <header>
+      <h1>WoVP Integrity — Dépôt de Log</h1>
+      <p class="subtitle">Sélectionnez votre nom, puis glissez votre fichier log ou parcourez vos fichiers.</p>
+    </header>
 
-<div class="player-grid" id="grid"></div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Rechercher votre nom de joueur..." onkeyup="filterPlayers()">
+    </div>
 
-<script>
-// =========================================================================
-// CONFIGURATION
-// =========================================================================
-const GITHUB_USER = "nufan14";
-const GITHUB_REPO = "wovp-logs";
-const GITHUB_TOKEN = "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";
+    <div class="grid" id="playersGrid"></div>
+  </div>
 
-// =========================================================================
-// LISTE DES JOUEURS — Ajoute ou retire des noms ici
-// =========================================================================
-const PLAYERS = [
-  "Matthieu",
-  "Alex",
-  "Delbol",
-  "Elicend",
-  "Sherman",
-  "Ale",
-  "Bielaski"
-];
+  <script>
+    // ⚠️ REMPLACER CETTE URL PAR L'URL DE VOTRE APPLICATION WEB GOOGLE APPS SCRIPT
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzICfzcQIGIL04nPUofXif_OIxpSbU2Epj28BG-Cgevuw3mEZ-Hv3JSYNAzj17MU3jU/exec";
 
-// =========================================================================
-// CONSTRUCTION DE LA GRILLE
-// =========================================================================
-const grid = document.getElementById("grid");
+    // LISTE DES JOUEURS (À adapter avec vos ~110 joueurs)
+    const PLAYERS = [
+      "Joueur_1", "Joueur_2", "Joueur_3", "Joueur_4",
+      "Joueur_5", "Joueur_6", "Joueur_7", "Joueur_8",
+      // Remplacez par vos vrais pseudo de joueurs
+    ];
 
-PLAYERS.forEach(playerName => {
-  const card = document.createElement("div");
-  card.className = "player-card";
+    const grid = document.getElementById('playersGrid');
 
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "player-name";
-  nameDiv.textContent = playerName;
+    function renderPlayers(playerList) {
+      grid.innerHTML = "";
+      playerList.forEach(playerName => {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        card.id = `card-${playerName}`;
 
-  const dropzone = document.createElement("div");
-  dropzone.className = "dropzone";
-  dropzone.textContent = "Déposer un log";
+        // Gestion du Drag & Drop
+        card.ondragover = (e) => { e.preventDefault(); card.classList.add('dragover'); };
+        card.ondragleave = () => card.classList.remove('dragover');
+        card.ondrop = (e) => {
+          e.preventDefault();
+          card.classList.remove('dragover');
+          if (e.dataTransfer.files.length > 0) {
+            uploadLog(playerName, e.dataTransfer.files[0]);
+          }
+        };
 
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".log,.txt";
-  fileInput.style.display = "none";
+        const safeId = playerName.replace(/[^a-zA-Z0-9]/g, '_');
 
-  const status = document.createElement("div");
-  status.className = "status";
+        card.innerHTML = `
+          <div class="player-name">${playerName}</div>
+          <div class="drop-zone-text">Glissez votre .txt / .log ici<br>ou</div>
+          <input type="file" id="file-${safeId}" style="display:none" onchange="uploadLog('${playerName}', this.files[0])">
+          <button class="btn-browse" onclick="document.getElementById('file-${safeId}').click()">Parcourir</button>
+          <div class="status-msg" id="status-${safeId}"></div>
+        `;
 
-  dropzone.appendChild(fileInput);
-
-  dropzone.addEventListener("click", () => fileInput.click());
-
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      uploadFile(playerName, fileInput.files[0], status, dropzone);
+        grid.appendChild(card);
+      });
     }
-  });
 
-  dropzone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropzone.classList.add("hover");
-  });
-
-  dropzone.addEventListener("dragleave", () => {
-    dropzone.classList.remove("hover");
-  });
-
-  dropzone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dropzone.classList.remove("hover");
-    if (e.dataTransfer.files.length > 0) {
-      uploadFile(playerName, e.dataTransfer.files[0], status, dropzone);
+    function filterPlayers() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = PLAYERS.filter(p => p.toLowerCase().includes(query));
+      renderPlayers(filtered);
     }
-  });
 
-  card.appendChild(nameDiv);
-  card.appendChild(dropzone);
-  card.appendChild(status);
-  grid.appendChild(card);
-});
+    function uploadLog(playerName, file) {
+      if (!file) return;
 
-// =========================================================================
-// UPLOAD VERS GITHUB
-// =========================================================================
-function uploadFile(playerName, file, statusEl, dropzoneEl) {
-  statusEl.textContent = "Envoi en cours...";
-  statusEl.className = "status";
+      const safeId = playerName.replace(/[^a-zA-Z0-9]/g, '_');
+      const statusEl = document.getElementById(`status-${safeId}`);
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const base64Content = e.target.result.split(',')[1];
-    const fileName = file.name;
-    const filePath = "logs/" + playerName + "/" + fileName;
+      statusEl.className = "status-msg sending";
+      statusEl.innerText = "Envoi en cours...";
 
-    const apiUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/contents/" + filePath;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1] || e.target.result;
 
-    fetch(apiUrl, {
-      method: "PUT",
-      headers: {
-        "Authorization": "Bearer " + GITHUB_TOKEN,
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: "Upload log: " + fileName + " (" + playerName + ")",
-        content: base64Content
-      })
-    })
-    .then(response => {
-      if (response.ok) {
-        statusEl.textContent = "✓ Envoyé !";
-        statusEl.className = "status ok";
-        dropzoneEl.textContent = "Déposer un autre log";
-      } else {
-        return response.json().then(err => { throw new Error(err.message || "HTTP " + response.status); });
-      }
-    })
-    .catch(error => {
-      statusEl.textContent = "✗ Erreur : " + error.message;
-      statusEl.className = "status error";
-    });
-  };
-  reader.readAsDataURL(file);
-}
-</script>
+        const payload = {
+          playerName: playerName,
+          fileName: file.name,
+          fileData: base64Data
+        };
 
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            statusEl.className = "status-msg success";
+            statusEl.innerText = "✅ Log envoyé !";
+          } else {
+            statusEl.className = "status-msg error";
+            statusEl.innerText = "❌ Erreur envoi.";
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          statusEl.className = "status-msg error";
+          statusEl.innerText = "❌ Erreur réseau.";
+        });
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // Initialisation
+    renderPlayers(PLAYERS);
+  </script>
 </body>
 </html>
