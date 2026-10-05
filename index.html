@@ -18,6 +18,8 @@
       --success: #22c55e;
       --error: #ef4444;
       --warning: #fbbf24;
+      --gold: #f59e0b;
+      --gold-glow: rgba(245, 158, 11, 0.25);
     }
 
     * {
@@ -86,9 +88,6 @@
       color: var(--warning);
       font-weight: 600;
       text-align: center;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
     .downloads-links {
@@ -161,7 +160,27 @@
       background-color: #6366f1;
     }
 
-    /* COMPACT PLAYER GRID */
+    /* SECTIONS & GRID */
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin: 15px 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title.quick-access-title {
+      color: var(--gold);
+    }
+
+    .quick-access-container {
+      margin-bottom: 20px;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -180,6 +199,12 @@
 
     .player-card:hover {
       border-color: #475569;
+    }
+
+    .player-card.quick-access-card {
+      border: 1.5px solid var(--gold);
+      box-shadow: 0 0 12px var(--gold-glow);
+      background-color: #1c2333;
     }
 
     .player-card.dragover {
@@ -268,15 +293,20 @@
       <button class="btn-add-player" onclick="addNewPlayer()">➕ Not in the list? Add yourself</button>
     </div>
 
-    <!-- PLAYERS GRID -->
+    <!-- QUICK ACCESS SECTION (IF A RECENT PLAYER IS SAVED) -->
+    <div id="quickAccessSection" class="quick-access-container" style="display: none;">
+      <div class="section-title quick-access-title">📌 Quick Access</div>
+      <div id="quickAccessGrid" class="grid"></div>
+    </div>
+
+    <!-- ALL PLAYERS GRID -->
+    <div id="allPlayersTitle" class="section-title">All Players</div>
     <div class="grid" id="playersGrid"></div>
   </div>
 
   <script>
-    // GOOGLE APPS SCRIPT WEB APP URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzICfzcQIGIL04nPUofXif_OIxpSbU2Epj28BG-Cgevuw3mEZ-Hv3JSYNAzj17MU3jU/exec";
 
-    // OFFICIAL WOVP PLAYERS LIST (165 PLAYERS)
     let PLAYERS = [
       "Aaron Arnwine", "Adrián Del Moral", "ALE 54 (VPA Team)", "Alex Alxlion", "Alex Delbol",
       "Alfonso Rafola", "Alfredo Melero", "Andrea Pugliese", "Andreas von Morgen", "B Z",
@@ -315,35 +345,55 @@
 
     const NEW_PLAYERS_SET = new Set();
     const grid = document.getElementById('playersGrid');
+    const quickGrid = document.getElementById('quickAccessGrid');
+    const quickSection = document.getElementById('quickAccessSection');
+
+    function createCardElement(playerName, isQuickAccess = false) {
+      const card = document.createElement('div');
+      card.className = `player-card ${isQuickAccess ? 'quick-access-card' : ''}`;
+      const prefix = isQuickAccess ? 'quick-' : '';
+      const safeId = playerName.replace(/[^a-zA-Z0-9]/g, '_');
+      card.id = `card-${prefix}${safeId}`;
+
+      card.ondragover = (e) => { e.preventDefault(); card.classList.add('dragover'); };
+      card.ondragleave = () => card.classList.remove('dragover');
+      card.ondrop = (e) => {
+        e.preventDefault();
+        card.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          uploadLog(playerName, e.dataTransfer.files[0], prefix);
+        }
+      };
+
+      card.innerHTML = `
+        <div class="player-name" title="${playerName}">${playerName}</div>
+        <div class="drop-zone-text">Drop log here<br>or</div>
+        <input type="file" id="file-${prefix}${safeId}" style="display:none" onchange="uploadLog('${playerName}', this.files[0], '${prefix}')">
+        <button class="btn-browse" onclick="document.getElementById('file-${prefix}${safeId}').click()">Browse</button>
+        <div class="status-msg" id="status-${prefix}${safeId}"></div>
+      `;
+
+      return card;
+    }
 
     function renderPlayers(playerList) {
       grid.innerHTML = "";
+      quickGrid.innerHTML = "";
+
+      const savedQuickPlayer = localStorage.getItem('wovp_quick_player');
+      const query = document.getElementById('searchInput').value.trim();
+
+      // Show Quick Access only if a player is saved AND user isn't currently filtering by search
+      if (savedQuickPlayer && !query) {
+        quickSection.style.display = 'block';
+        quickGrid.appendChild(createCardElement(savedQuickPlayer, true));
+      } else {
+        quickSection.style.display = 'none';
+      }
+
+      // Render the main list
       playerList.forEach(playerName => {
-        const card = document.createElement('div');
-        card.className = 'player-card';
-        card.id = `card-${playerName}`;
-
-        card.ondragover = (e) => { e.preventDefault(); card.classList.add('dragover'); };
-        card.ondragleave = () => card.classList.remove('dragover');
-        card.ondrop = (e) => {
-          e.preventDefault();
-          card.classList.remove('dragover');
-          if (e.dataTransfer.files.length > 0) {
-            uploadLog(playerName, e.dataTransfer.files[0]);
-          }
-        };
-
-        const safeId = playerName.replace(/[^a-zA-Z0-9]/g, '_');
-
-        card.innerHTML = `
-          <div class="player-name" title="${playerName}">${playerName}</div>
-          <div class="drop-zone-text">Drop log here<br>or</div>
-          <input type="file" id="file-${safeId}" style="display:none" onchange="uploadLog('${playerName}', this.files[0])">
-          <button class="btn-browse" onclick="document.getElementById('file-${safeId}').click()">Browse</button>
-          <div class="status-msg" id="status-${safeId}"></div>
-        `;
-
-        grid.appendChild(card);
+        grid.appendChild(createCardElement(playerName, false));
       });
     }
 
@@ -373,18 +423,22 @@
       document.getElementById('searchInput').value = "";
       renderPlayers(PLAYERS);
 
-      const newCard = document.getElementById(`card-${trimmedName}`);
+      const safeId = trimmedName.replace(/[^a-zA-Z0-9]/g, '_');
+      const newCard = document.getElementById(`card-${safeId}`);
       if (newCard) {
         newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         newCard.style.borderColor = 'var(--primary)';
       }
     }
 
-    function uploadLog(playerName, file) {
+    function uploadLog(playerName, file, prefix = '') {
       if (!file) return;
 
+      // Save player to localStorage as Quick Access for future visits
+      localStorage.setItem('wovp_quick_player', playerName);
+
       const safeId = playerName.replace(/[^a-zA-Z0-9]/g, '_');
-      const statusEl = document.getElementById(`status-${safeId}`);
+      const statusEl = document.getElementById(`status-${prefix}${safeId}`);
 
       statusEl.className = "status-msg sending";
       statusEl.innerText = "Uploading...";
@@ -409,6 +463,8 @@
           if (data.status === "success") {
             statusEl.className = "status-msg success";
             statusEl.innerText = "✅ Submitted!";
+            // Re-render after successful submission to update Quick Access section
+            setTimeout(() => renderPlayers(PLAYERS), 1200);
           } else {
             statusEl.className = "status-msg error";
             statusEl.innerText = "❌ Failed.";
