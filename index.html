@@ -17,6 +17,7 @@
       --text-muted: #94a3b8;
       --success: #22c55e;
       --error: #ef4444;
+      --warning: #fbbf24;
     }
 
     * {
@@ -70,14 +71,31 @@
     /* DOWNLOADS SECTION */
     .downloads-bar {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 25px;
+      background: var(--card-bg);
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    .downloads-warning {
+      font-size: 0.8rem;
+      color: var(--warning);
+      font-weight: 600;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .downloads-links {
+      display: flex;
       justify-content: center;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 25px;
-      background: var(--card-bg);
-      padding: 12px 18px;
-      border-radius: 10px;
-      border: 1px solid var(--card-border);
     }
 
     .download-link {
@@ -87,10 +105,10 @@
       background-color: #1e293b;
       color: var(--primary);
       border: 1px solid var(--primary);
-      padding: 6px 12px;
+      padding: 8px 14px;
       border-radius: 6px;
       text-decoration: none;
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       font-weight: 600;
       transition: all 0.2s ease;
     }
@@ -221,7 +239,7 @@
   <div class="container">
     <header>
       <div class="logo-container">
-        <img src="new wovp logo HQ.png" alt="WoVP Logo" onerror="this.style.display='none'">
+        <img src="wovp-logo.png" alt="WoVP Logo" onerror="this.style.display='none'">
       </div>
       <h1>World of Virtual Pinball — Integrity Portal</h1>
       <p class="subtitle">Locate your player name, then drop your log file or browse to submit.</p>
@@ -229,13 +247,17 @@
 
     <!-- DOWNLOADS BAR -->
     <div class="downloads-bar">
-      <span style="font-size: 0.85rem; color: var(--text-muted); align-self: center; font-weight: 600;">Downloads:</span>
-      <a href="WoVP_Patcher.exe" class="download-link" download>
-        💾 WoVP Patcher v1.2.0 (.exe)
-      </a>
-      <a href="wovp_script.vbs" class="download-link" download>
-        📜 Universal VBS Script (.vbs)
-      </a>
+      <div class="downloads-warning">
+        ⚠️ Note: Executables/patchers may trigger a false positive virus warning from your antivirus or browser.
+      </div>
+      <div class="downloads-links">
+        <a href="https://mega.nz/file/VH0CBYbS#Ahnu8Omo87OobZOLL5EXOoaKE2QZb_fRbsHnmzQ-mbM" target="_blank" class="download-link">
+          📦 WoVP Patcher 1.2 Archive RAR
+        </a>
+        <a href="https://mega.nz/folder/IDkVEAoY#VMj547iAwSwsDilgDl7lhQ" target="_blank" class="download-link">
+          📂 WoVP Patcher 1.2 Loose Files
+        </a>
+      </div>
     </div>
 
     <!-- SEARCH & ADD PLAYER BAR -->
@@ -254,7 +276,7 @@
     // GOOGLE APPS SCRIPT WEB APP URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzICfzcQIGIL04nPUofXif_OIxpSbU2Epj28BG-Cgevuw3mEZ-Hv3JSYNAzj17MU3jU/exec";
 
-    // OFFICIAL WOVP PLAYERS LIST (173 PLAYERS)
+    // OFFICIAL WOVP PLAYERS LIST (165 PLAYERS)
     let PLAYERS = [
       "Aaron Arnwine", "Adrián Del Moral", "ALE 54 (VPA Team)", "Alex Alxlion", "Alex Delbol",
       "Alfonso Rafola", "Alfredo Melero", "Andrea Pugliese", "Andreas von Morgen", "B Z",
@@ -291,9 +313,7 @@
       "Tommy Anciaux", "Tommy Jax", "Ulle Florian", "Walt Kuhn", "Zoe Fletcher"
     ];
 
-    // Set to keep track of dynamically added players in current session
     const NEW_PLAYERS_SET = new Set();
-
     const grid = document.getElementById('playersGrid');
 
     function renderPlayers(playerList) {
@@ -303,7 +323,6 @@
         card.className = 'player-card';
         card.id = `card-${playerName}`;
 
-        // Drag & Drop handlers
         card.ondragover = (e) => { e.preventDefault(); card.classList.add('dragover'); };
         card.ondragleave = () => card.classList.remove('dragover');
         card.ondrop = (e) => {
@@ -340,7 +359,6 @@
 
       const trimmedName = name.trim();
       
-      // Check if player already exists
       if (PLAYERS.some(p => p.toLowerCase() === trimmedName.toLowerCase())) {
         alert("This player name is already in the list!");
         document.getElementById('searchInput').value = trimmedName;
@@ -348,17 +366,13 @@
         return;
       }
 
-      // Track as new unlisted player
       NEW_PLAYERS_SET.add(trimmedName);
-
-      // Add player and refresh
       PLAYERS.push(trimmedName);
       PLAYERS.sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
       
       document.getElementById('searchInput').value = "";
       renderPlayers(PLAYERS);
 
-      // Scroll to newly added card
       const newCard = document.getElementById(`card-${trimmedName}`);
       if (newCard) {
         newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -410,7 +424,6 @@
       reader.readAsDataURL(file);
     }
 
-    // Initial load
     renderPlayers(PLAYERS);
   </script>
 </body>
