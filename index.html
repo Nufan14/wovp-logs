@@ -1,19 +1,26 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WoVP Integrity - Dépôt de Logs</title>
+  <title>WoVP Integrity — Log Submission Portal</title>
   <style>
     :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --card-hover: #334155;
+      --bg-color: #0b0f19;
+      --card-bg: #161f32;
+      --card-border: #2a3756;
+      --card-hover: #222f48;
       --primary: #38bdf8;
+      --primary-glow: rgba(56, 189, 248, 0.2);
+      --accent: #818cf8;
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --success: #22c55e;
       --error: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
@@ -21,107 +28,187 @@
       background-color: var(--bg-color);
       color: var(--text);
       margin: 0;
-      padding: 20px;
+      padding: 20px 15px;
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
+    /* HEADER & LOGO */
     header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo-container {
+      margin-bottom: 12px;
+    }
+
+    .logo-container img {
+      max-height: 80px;
+      width: auto;
+      filter: drop-shadow(0 0 12px var(--primary-glow));
     }
 
     h1 {
       color: var(--primary);
-      margin-bottom: 8px;
+      margin: 0 0 6px 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.5px;
     }
 
     p.subtitle {
       color: var(--text-muted);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      margin: 0;
     }
 
-    .search-box {
-      margin-bottom: 25px;
+    /* DOWNLOADS SECTION */
+    .downloads-bar {
       display: flex;
       justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+      background: var(--card-bg);
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #1e293b;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .download-link:hover {
+      background-color: var(--primary);
+      color: #0b0f19;
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* SEARCH BAR & ADD PLAYER */
+    .controls-bar {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .search-box input {
-      width: 100%;
-      max-width: 400px;
-      padding: 12px 18px;
+      width: 320px;
+      padding: 10px 16px;
       border-radius: 8px;
-      border: 1px solid #475569;
+      border: 1px solid var(--card-border);
       background-color: var(--card-bg);
       color: var(--text);
-      font-size: 1rem;
+      font-size: 0.95rem;
       outline: none;
+      transition: border-color 0.2s;
     }
 
     .search-box input:focus {
       border-color: var(--primary);
+      box-shadow: 0 0 8px var(--primary-glow);
     }
 
+    .btn-add-player {
+      background-color: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-add-player:hover {
+      background-color: #6366f1;
+    }
+
+    /* COMPACT PLAYER GRID */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
     }
 
     .player-card {
       background-color: var(--card-bg);
-      border: 2px dashed #475569;
-      border-radius: 12px;
-      padding: 16px;
+      border: 1.5px dashed var(--card-border);
+      border-radius: 10px;
+      padding: 10px 8px;
       text-align: center;
       transition: all 0.2s ease;
       position: relative;
     }
 
+    .player-card:hover {
+      border-color: #475569;
+    }
+
     .player-card.dragover {
       border-color: var(--primary);
       background-color: var(--card-hover);
+      box-shadow: 0 0 12px var(--primary-glow);
     }
 
     .player-name {
-      font-weight: bold;
-      font-size: 1.1rem;
-      margin-bottom: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
       color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .drop-zone-text {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      line-height: 1.2;
     }
 
     .btn-browse {
-      background-color: #334155;
+      background-color: #1e293b;
       color: var(--primary);
       border: 1px solid var(--primary);
-      padding: 8px 14px;
-      border-radius: 6px;
+      padding: 5px 10px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
 
     .btn-browse:hover {
       background-color: var(--primary);
-      color: #0f172a;
+      color: #0b0f19;
     }
 
     .status-msg {
-      margin-top: 10px;
-      font-size: 0.85rem;
+      margin-top: 6px;
+      font-size: 0.75rem;
       font-weight: bold;
-      min-height: 1.2em;
+      min-height: 1.1em;
     }
 
     .status-msg.sending { color: var(--primary); }
@@ -133,27 +220,79 @@
 
   <div class="container">
     <header>
-      <h1>WoVP Integrity — Dépôt de Log</h1>
-      <p class="subtitle">Sélectionnez votre nom, puis glissez votre fichier log ou parcourez vos fichiers.</p>
+      <div class="logo-container">
+        <img src="wovp-logo.png" alt="WoVP Logo" onerror="this.style.display='none'">
+      </div>
+      <h1>World of Virtual Pinball — Integrity Portal</h1>
+      <p class="subtitle">Locate your player name, then drop your log file or browse to submit.</p>
     </header>
 
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Rechercher votre nom de joueur..." onkeyup="filterPlayers()">
+    <!-- DOWNLOADS BAR -->
+    <div class="downloads-bar">
+      <span style="font-size: 0.85rem; color: var(--text-muted); align-self: center; font-weight: 600;">Downloads:</span>
+      <a href="WoVP_Patcher.exe" class="download-link" download>
+        💾 WoVP Patcher v1.2.0 (.exe)
+      </a>
+      <a href="wovp_script.vbs" class="download-link" download>
+        📜 Universal VBS Script (.vbs)
+      </a>
     </div>
 
+    <!-- SEARCH & ADD PLAYER BAR -->
+    <div class="controls-bar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search player name..." onkeyup="filterPlayers()">
+      </div>
+      <button class="btn-add-player" onclick="addNewPlayer()">➕ Not in the list? Add yourself</button>
+    </div>
+
+    <!-- PLAYERS GRID -->
     <div class="grid" id="playersGrid"></div>
   </div>
 
   <script>
-    // ⚠️ REMPLACER CETTE URL PAR L'URL DE VOTRE APPLICATION WEB GOOGLE APPS SCRIPT
+    // GOOGLE APPS SCRIPT WEB APP URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzICfzcQIGIL04nPUofXif_OIxpSbU2Epj28BG-Cgevuw3mEZ-Hv3JSYNAzj17MU3jU/exec";
 
-    // LISTE DES JOUEURS (À adapter avec vos ~110 joueurs)
-    const PLAYERS = [
-      "Joueur_1", "Joueur_2", "Joueur_3", "Joueur_4",
-      "Joueur_5", "Joueur_6", "Joueur_7", "Joueur_8",
-      // Remplacez par vos vrais pseudo de joueurs
+    // OFFICIAL WOVP PLAYERS LIST (173 PLAYERS)
+    let PLAYERS = [
+      "Aaron Arnwine", "Adrián Del Moral", "ALE 54 (VPA Team)", "Alex Alxlion", "Alex Delbol",
+      "Alfonso Rafola", "Alfredo Melero", "Andrea Pugliese", "Andreas von Morgen", "B Z",
+      "Ben Crockett", "Benjamin Cohen", "Bob Sherman", "Brent Lane", "Chris DeJesus",
+      "Christian Schroeder", "Christopher Mee", "Cody Guindon", "Corinna Karl", "Courtneay Parsons",
+      "cullen c", "Curtis Kaminski", "Cyrille Rouillé", "D4ft Chunk", "Dai J (UK)",
+      "Dan Bielaski", "Dan Fowler", "David Brown", "David Chittick", "David Fletcher",
+      "Davy Gmz", "Dean Barrett", "Derek McEachern", "Derrick Curley", "Dirk Wesenberg",
+      "Doug Dear", "Ed Krain", "Elicend Nico", "Eric Beck", "Eric Cohen",
+      "Erik J", "Evan V", "Ezi Fox", "François Douggystyle", "Fred Reiter",
+      "george peckham", "Gilbert Ablin", "Gismo Gremlin", "Grave D", "Greg Mertz",
+      "Heidi Mitchell", "Holger Esser", "IAN WVP", "James Bridcut", "James Miller",
+      "James Moore", "jamie sorrell", "Jari Muinonen", "Jason Mitchell", "Jemand Anders",
+      "Jeremiah Bond", "Jesse Walker", "Jochen Bilderbeek", "Joe Lumley", "John Clark",
+      "Karl Zeek", "Keith McBrair", "Kelvin Stephen", "Kenneth Svensson", "Kevin Kellish",
+      "Kevin Rhyne", "Kévin Dorothé", "Kimmy Burrow", "Kit Morris", "Koen De Backer",
+      "Koji Ro", "Kyle Muehl", "Lance Parsons", "Laura Lane", "Lee Howard",
+      "Lee Kuti", "Lionel Barrera Da Silva", "Lucifer J", "Luis Marquez", "Luis Pompa",
+      "Lynton", "Manu Toltoiv", "Marcela Barbieri", "Marco Cappellacci", "Mark Finfrock",
+      "Mark Hand", "Mark Koehler", "Martin H", "Martin Peel", "Matt Barnhart",
+      "Matthieu Mallein", "Mc KrillRoy", "Michael Baberick", "Michael C. Burrow", "MICHAEL KAPUSCHINSKY",
+      "Mikael Petiot", "Mike Hodges", "Mike Parker", "Mike Pitcher", "Mirko Gallorini",
+      "Mr Mattamus", "Nick Christopher", "Nick Sexauer", "Nick Taylor", "Nicole Koehler",
+      "Nikolas Rolin", "NONO08 .", "Ofir Gabay", "Olaf Hansen", "Oliver Stadler",
+      "Olivier Dumaine", "Ollivier Francq", "Oscar Damen", "Patrice Wolff", "Paul Robinson",
+      "Peter Bot", "Peter Nikolic", "Phil Frey", "Pierre Epis", "Pinball Blizzard",
+      "Return Zero", "Rich Twilley", "Ritsert Harsveld", "Rob Polivka", "Robby Resnick",
+      "Robin Brouwer", "Rodolphe Dupré", "Ronald van Dijk", "Ruddy Jacquiot", "Russell D",
+      "Ryan Newton", "Ryan Yarbrough", "S. Kubrick", "Sa bou", "sascha de caro",
+      "Scott Filiault", "Scott Roberts", "Shannon Schneider", "Shaun Jones", "Sinibomb",
+      "Sinister One", "Spencer Cooper", "Stephen Pottebaum", "Steven Nourse", "Sztupak Csaba",
+      "T C", "Taylor Autobott", "Terry Johnson", "Thierry Laurent", "Thijs Hulscher",
+      "Thorsten Birg", "Tim Lord", "Todd Nixon", "Tom Bulsink", "Tommi Koski",
+      "Tommy Anciaux", "Tommy Jax", "Ulle Florian", "Walt Kuhn", "Zoe Fletcher"
     ];
+
+    // Set to keep track of dynamically added players in current session
+    const NEW_PLAYERS_SET = new Set();
 
     const grid = document.getElementById('playersGrid');
 
@@ -164,7 +303,7 @@
         card.className = 'player-card';
         card.id = `card-${playerName}`;
 
-        // Gestion du Drag & Drop
+        // Drag & Drop handlers
         card.ondragover = (e) => { e.preventDefault(); card.classList.add('dragover'); };
         card.ondragleave = () => card.classList.remove('dragover');
         card.ondrop = (e) => {
@@ -178,10 +317,10 @@
         const safeId = playerName.replace(/[^a-zA-Z0-9]/g, '_');
 
         card.innerHTML = `
-          <div class="player-name">${playerName}</div>
-          <div class="drop-zone-text">Glissez votre .txt / .log ici<br>ou</div>
+          <div class="player-name" title="${playerName}">${playerName}</div>
+          <div class="drop-zone-text">Drop log here<br>or</div>
           <input type="file" id="file-${safeId}" style="display:none" onchange="uploadLog('${playerName}', this.files[0])">
-          <button class="btn-browse" onclick="document.getElementById('file-${safeId}').click()">Parcourir</button>
+          <button class="btn-browse" onclick="document.getElementById('file-${safeId}').click()">Browse</button>
           <div class="status-msg" id="status-${safeId}"></div>
         `;
 
@@ -195,6 +334,38 @@
       renderPlayers(filtered);
     }
 
+    function addNewPlayer() {
+      const name = prompt("Enter your Player Name / Gamertag:");
+      if (!name || name.trim() === "") return;
+
+      const trimmedName = name.trim();
+      
+      // Check if player already exists
+      if (PLAYERS.some(p => p.toLowerCase() === trimmedName.toLowerCase())) {
+        alert("This player name is already in the list!");
+        document.getElementById('searchInput').value = trimmedName;
+        filterPlayers();
+        return;
+      }
+
+      // Track as new unlisted player
+      NEW_PLAYERS_SET.add(trimmedName);
+
+      // Add player and refresh
+      PLAYERS.push(trimmedName);
+      PLAYERS.sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
+      
+      document.getElementById('searchInput').value = "";
+      renderPlayers(PLAYERS);
+
+      // Scroll to newly added card
+      const newCard = document.getElementById(`card-${trimmedName}`);
+      if (newCard) {
+        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        newCard.style.borderColor = 'var(--primary)';
+      }
+    }
+
     function uploadLog(playerName, file) {
       if (!file) return;
 
@@ -202,7 +373,7 @@
       const statusEl = document.getElementById(`status-${safeId}`);
 
       statusEl.className = "status-msg sending";
-      statusEl.innerText = "Envoi en cours...";
+      statusEl.innerText = "Uploading...";
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -211,7 +382,8 @@
         const payload = {
           playerName: playerName,
           fileName: file.name,
-          fileData: base64Data
+          fileData: base64Data,
+          isNewPlayer: NEW_PLAYERS_SET.has(playerName)
         };
 
         fetch(GOOGLE_SCRIPT_URL, {
@@ -222,23 +394,23 @@
         .then(data => {
           if (data.status === "success") {
             statusEl.className = "status-msg success";
-            statusEl.innerText = "✅ Log envoyé !";
+            statusEl.innerText = "✅ Submitted!";
           } else {
             statusEl.className = "status-msg error";
-            statusEl.innerText = "❌ Erreur envoi.";
+            statusEl.innerText = "❌ Failed.";
           }
         })
         .catch(err => {
           console.error(err);
           statusEl.className = "status-msg error";
-          statusEl.innerText = "❌ Erreur réseau.";
+          statusEl.innerText = "❌ Network error.";
         });
       };
 
       reader.readAsDataURL(file);
     }
 
-    // Initialisation
+    // Initial load
     renderPlayers(PLAYERS);
   </script>
 </body>
